@@ -1,48 +1,99 @@
 #include "FOV.h"
 
-void FOV::compute(Map& map, Point origin, int radius)
+// Eight sets of { xx, xy, yx, yy } multipliers. They rotate the one canonical
+// octant the algorithm works in into each of the eight 45 degree sectors.
+// A map coordinate is reconstructed as:  x = cx + dx*xx + dy*xy
+//                                        y = cy + dx*yx + dy*yy
+// where dy = -distance (it runs "up" the octant) and dx = -distance..0.
+const int FOV::MULT[8][4] = {
+    {  1,  0,  0,  1 },
+    {  0,  1,  1,  0 },
+    {  0, -1,  1,  0 },
+    { -1,  0,  0,  1 },
+    { -1,  0,  0, -1 },
+    {  0, -1, -1,  0 },
+    {  0,  1, -1,  0 },
+    {  1,  0,  0, -1 },
+};
+
+void FOV::compute(Map& map, int originX, int originY)
 {
- 
-    for (int y = 0; y < MAP_H; ++y)
-        for (int x = 0; x < MAP_W; ++x)
-            map.at(x, y).visible = false;
+    // Every tile starts the turn out of sight; the cast below re-lights what
+    // can be seen. `explored` is never cleared — it is permanent memory.
+    for (int y = 0; y < MAP_HEIGHT; ++y)
+        for (int x = 0; x < MAP_WIDTH; ++x)
+            map.tiles[y][x].visible = false;
 
-   
-    map.at(origin.x, origin.y).visible = true;
-    map.at(origin.x, origin.y).explored = true;
+    map.tiles[originY][originX].visible = true;
+    map.tiles[originY][originX].explored = true;
 
-    
-    for (int angle = 0; angle < 360; ++angle)
-    {
-        float rad = angle * 3.14159265f / 180.0f;
-        float endX = origin.x + radius * std::cos(rad);
-        float endY = origin.y + radius * std::sin(rad);
-        castRay(map, origin, { (int)endX, (int)endY });
-    }
+    for (int oct = 0; oct < 8; ++oct)
+        castLight(map, originX, originY,
+            1, 1.0f, 0.0f,
+            MULT[oct][0], MULT[oct][1], MULT[oct][2], MULT[oct][3]);
 }
 
-void FOV::castRay(Map& map, Point from, Point to)
+// Scan one row of the octant at a time, tracking the arc of slopes that is
+// still lit. A wall casts a shadow; the function recurses to handle the lit
+// arc that precedes the wall, then narrows the arc for the rest of the row.
+void FOV::castLight(Map& map, int cx, int cy,
+    int row, float startSlope, float endSlope,
+    int xx, int xy, int yx, int yy)
 {
-    int x0 = from.x, y0 = from.y;
-    int x1 = to.x, y1 = to.y;
+    if (startSlope < endSlope) return;
 
-    int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-    int dy = std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-    int err = dx - dy;
+    float nextStartSlope = startSlope;
+    bool  blocked = false;
 
-    while (true)
+    for (int distance = row; distance <= RADIUS && !blocked; ++distance)
     {
-        if (x0 < 0 || x0 >= MAP_W || y0 < 0 || y0 >= MAP_H) return;
+        int dy = -distance;
 
-        Tile& t = map.at(x0, y0);
-        t.visible = true;
-        t.explored = true;
+        for (int dx = -distance; dx <= 0; ++dx)
+        {
+            // Slopes of this cell's left and right edges. dy is negative, so
+            // the denominators are (dy + 0.5) and (dy - 0.5).
+            float lSlope = (dx - 0.5f) / (dy + 0.5f);
+            float rSlope = (dx + 0.5f) / (dy - 0.5f);
 
-        if (t.terrain == Terrain::Wall) return;  
-        if (x0 == x1 && y0 == y1) return;        
+            if (startSlope < rSlope) continue;   // not in the lit arc yet
+            if (endSlope > lSlope) break;       // past the far edge of the arc
 
-        int e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; x0 += sx; }
-        if (e2 < dx) { err += dx; y0 += sy; }
+            int x = cx + dx * xx + dy * xy;
+            int y = cy + dx * yx + dy * yy;
+
+            if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT)
+                continue;
+
+            // Circular clamp — without it the lit area would be a square.
+            if (dx * dx + dy * dy <= RADIUS * RADIUS)
+            {
+                map.tiles[y][x].visible = true;
+                map.tiles[y][x].explored = true;
+            }
+
+            bool isWall = (map.tiles[y][x].type == TileType::Wall);
+
+            if (blocked)
+            {
+                if (isWall)
+                {
+                    nextStartSlope = rSlope;       // still in shadow
+                }
+                else
+                {
+                    blocked = false;            // shadow ended
+                    startSlope = nextStartSlope;
+                }
+            }
+            else if (isWall && distance < RADIUS)
+            {
+                // Entering shadow: recurse on the lit arc above this wall,
+                // then keep scanning with a tightened start slope.
+                blocked = true;
+                castLight(map, cx, cy, distance + 1, startSlope, lSlope, xx, xy, yx, yy);
+                nextStartSlope = rSlope;
+            }
+        }
     }
 }

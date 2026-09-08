@@ -1,15 +1,24 @@
 #pragma once
-#include "Common.h"
 #include "Map.h"
-#include <cmath>
 
+// ---------------------------------------------------------------------------
+//  Field of view by recursive shadowcasting — the algorithm shipped by
+//  NetHack, Angband, DCSS and most serious roguelikes. It works in one 45°
+//  octant and is run eight times (once per octant) to cover all directions.
+// ---------------------------------------------------------------------------
 class FOV
 {
 public:
-    
-    static void compute(Map& map, Point origin, int radius);
+    static constexpr int RADIUS = 11;   // how far the player can see, in tiles
+
+    // Clear all visibility, then light every tile in line of sight of
+    // (originX, originY) and mark it explored.
+    static void compute(Map& map, int originX, int originY);
 
 private:
-    
-    static void castRay(Map& map, Point from, Point to);
+    static const int MULT[8][4];        // per-octant coordinate transforms
+
+    static void castLight(Map& map, int cx, int cy,
+        int row, float startSlope, float endSlope,
+        int xx, int xy, int yx, int yy);
 };

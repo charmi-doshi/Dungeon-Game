@@ -80,7 +80,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\SDL3\SDL3-3.4.10\lib\x64;C:\SDL3\SDL3_ttf-3.2.0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL3.lib;SDL3_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -98,7 +98,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -116,7 +116,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\SDL3\SDL3-3.4.10\lib\x64;C:\SDL3\SDL3_ttf-3.2.0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL3.lib;SDL3_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -134,7 +134,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -143,19 +143,38 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DijkstraMap.cpp" />
     <ClCompile Include="FOV.cpp" />
+    <ClCompile Include="Game.cpp" />
     <ClCompile Include="GlyphCache.cpp" />
+    <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MapGen.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="SaveLoad.cpp" />
+    <ClCompile Include="Sound.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+    <ClInclude Include="DijkstraMap.h" />
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="FOV.h" />
+    <ClInclude Include="Game.h" />
     <ClInclude Include="GlyphCache.h" />
+    <ClInclude Include="Item.h" />
+    <ClInclude Include="Level.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapGen.h" />
+    <ClInclude Include="MessageLog.h" />
+    <ClInclude Include="Monster.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="SaveLoad.h" />
+    <ClInclude Include="Sound.h" />
     <ClInclude Include="Tile.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="C:\Users\Charmi\Downloads\RobotoMono-Light.ttf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

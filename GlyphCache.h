@@ -1,42 +1,41 @@
 #pragma once
 #include <SDL3/SDL.h>
-#include <SDL3_ttf/SDL_ttf.h>
-#include <unordered_map>
 
+// ---------------------------------------------------------------------------
+//  GlyphCache — the ASCII renderer used by every part of this series.
+//
+//  At construction it renders each printable ASCII character once, in white,
+//  into its own small SDL_Texture. At draw time it tints that texture with
+//  SDL_SetTextureColorMod and blits it CENTRED in a TILE_SIZE cell AT ITS
+//  NATURAL SIZE — never stretched. Drawing at natural size is what keeps the
+//  glyphs crisp; stretching a 12x16 glyph to fill a 20x20 cell is what
+//  deforms them.
+// ---------------------------------------------------------------------------
 class GlyphCache
 {
 public:
-    GlyphCache(SDL_Renderer* renderer, const char* fontPath, int ptSize);
+    GlyphCache(SDL_Renderer* sdl, const char* fontPath, float ptSize);
     ~GlyphCache();
 
-    void draw(SDL_Renderer* renderer, char glyph,
-        int col, int row, SDL_Color color) const;
+    // Was the font loaded and the cache built successfully?
+    bool ok() const { return m_loaded; }
+
+    // Draw character `ch`, centred in grid cell (col, row), tinted `color`.
+    void drawGlyph(int col, int row, char ch, SDL_Color color) const;
 
 private:
-    TTF_Font* font_ = nullptr;
-    SDL_Texture* atlas_ = nullptr;   // not used in this simple version
-    SDL_Renderer* renderer_ = nullptr;
+    SDL_Renderer* m_sdl = nullptr;
+    bool          m_loaded = false;
 
-    struct GlyphEntry
+    static constexpr int FIRST_CHAR = 32;    // space
+    static constexpr int LAST_CHAR = 126;   // tilde
+    static constexpr int NUM_CHARS = LAST_CHAR - FIRST_CHAR + 1;
+
+    struct Glyph
     {
         SDL_Texture* tex = nullptr;
-        int          w = 0;
-        int          h = 0;
+        int          w = 0;     // natural rendered width
+        int          h = 0;     // natural rendered height
     };
-
-    mutable std::unordered_map<char, GlyphEntry> cache_;
-    const GlyphEntry& getGlyph(char c) const;
+    Glyph m_glyphs[NUM_CHARS];
 };
-
-void GlyphCache::draw(SDL_Renderer* renderer, char glyph,
-    int col, int row, SDL_Color color) const
-{
-    const GlyphEntry& g = getGlyph(glyph);
-    SDL_SetTextureColorMod(g.tex, color.r, color.g, color.b);
-    SDL_SetTextureAlphaMod(g.tex, color.a);
-
-    float x = col * CELL_W + (CELL_W - g.w) * 0.5f;
-    float y = row * CELL_H + (CELL_H - g.h) * 0.5f;
-    SDL_FRect dst{ x, y, (float)g.w, (float)g.h };
-    SDL_RenderTexture(renderer, g.tex, nullptr, &dst);
-}
